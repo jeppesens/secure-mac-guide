@@ -91,17 +91,40 @@ brew install dnscrypt-proxy
 
 Once installed, you need to change the listen port for the service. Edit the file `/opt/homebrew/etc/dnscrypt-proxy.toml` and change the following line:
 
-```
+```toml
 listen_addresses = ['127.0.0.1:53']
 ```
 
 to
 
-```
+```toml
 listen_addresses = ['127.0.0.1:40']
 ```
-
 This way, dnscrypt-proxy will listen on port 40 instead, since we use dnsmasq to listen on port 53 which is the default dns port.
+
+Then change the following line:
+
+```toml
+server_names = ....
+```
+
+to
+
+```toml
+server_names = ['cloudflare', 'cloudflare-ipv6', 'dnscrypt-ip4-nofilter-pri', 'dnscrypt-ip4-nofilter-alt', ' dnscrypt-ip6-nofilter-pri', 'dnscrypt-ip6-nofilter-alt']
+```
+
+if you wanna resolve mongodb.net
+
+and make sure the following code is uncommented:
+
+```toml
+  [sources.quad9-resolvers]
+  urls = ['https://www.quad9.net/quad9-resolvers.md']
+  minisign_key = 'RWQBphd2+f6eiAqBsvDZEBXBGHQBJfeG6G+wJPPKxCZMoEQYpmoysKUN'
+  cache_file = 'quad9-resolvers.md'
+  prefix = 'quad9-'
+```
 
 Restart dnscrypt-proxy to make the changes take affect:
 
@@ -120,7 +143,7 @@ Once installed, you'll need to change to configuration of dnsmasq. If you add dn
 
 Alter the following file `/opt/homebrew/etc/dnsmasq.conf` and add the following content to the end of the file:
 
-```
+```conf
 # For debugging purposes, log each DNS query as it passes through dnsmasq.
 # If you wanna see the entries, uncomment the two lines below, and make sure that
 # the folder /opt/homebrew/var/log/ exists
@@ -133,12 +156,10 @@ port=53
 #interface=lo0
 domain-needed
 bogus-priv
-filterwin2k
 no-resolv
 no-hosts
 no-poll
-cache-size=8192
-min-cache-ttl=120
+no-negcache
 rebind-localhost-ok
 strict-order
 proxy-dnssec
