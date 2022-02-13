@@ -1,6 +1,4 @@
-This is a practical guide to using [YubiKey](https://www.yubico.com/faq/yubikey/) as a SmartCard for storing GPG encryption and signing keys. Keys stored on a SmartCard like YubiKey seem more difficult to steal than ones stored on disk, and are convenient for everyday use..
-
-The blog "[Exploring Hard Tokens](https://www.avisi.nl/blog/2012/01/05/exploring-hard-tokens/)" describes the disadvantages of the combination of a username/password for access control. Passwords can be cracked or retrieved by social engineering. They can be read from faulty systems or even retrieved from unsecured internet access.
+This is a practical guide to requiring [YubiKey](https://www.yubico.com/faq/yubikey/) to unlock Mac.
 
 Authentication on a workstation often is done by using a username and password. Furthermore, it is almost impossible to detect when an attacker accesses a system. Therefore it is important to strengthen your authentication by adding a second step to your authentication process.
 
@@ -12,7 +10,7 @@ You should also buy another YubiKey as a backup key for your computer login, bec
 # Prepare your MacBook
 
 ## Enable full disk encryption
-Please make sure before you start this process, that your Macbook has enabled FileVault 2 disk encryption.
+Please make sure before you start this process, that your MacBook has enabled FileVault 2 disk encryption.
 Apple has an excellent guide here https://support.apple.com/en-gb/HT204837
 
 
@@ -20,7 +18,7 @@ Apple has an excellent guide here https://support.apple.com/en-gb/HT204837
 Command line users who wish to add an additional layer of security to their keyboarding within Terminal app can find a helpful privacy feature built into the Mac client. Whether aiming for generally increasing security, if using a public Mac, or are simply concerned about things like keyloggers or any other potentially unauthorized access to your keystrokes and character entries, you can enable this feature in the Mac OS X Terminal app to secure keyboard entry and any command line input into the terminal.
 
 ### Mac builtin Terminal
-Enable it for the build in Terminal on Macbook:
+Enable it for the build in Terminal on MacBook:
 
 ![SKI Terminal](http://cdn.osxdaily.com/wp-content/uploads/2011/12/secure-keyboard-entry.jpg "Terminal enable SKI")
 
@@ -180,7 +178,7 @@ Restart dnsmasq to make sure changes are affected
 sudo brew services restart dnsmasq
 ```
 
-Then enable DNSMASQ for each interface on your Mac:
+[OPTIONAL] Then enable DNSMASQ for each interface on your Mac:
 
 ```sh
 networksetup -listallnetworkservices 2>/dev/null | grep -v '*' | while read x ; do
@@ -200,7 +198,7 @@ to your `~/.zshrc` file - if you use ZSH.
 ### Block DNS queries
 You should block all connections to other DNS servers as various programs use some sort of internal DNS resolver. Chrome has this build in, lots of programs also falls back to systemd's resolver. So to make sure we always use Stubby as DNS resolver, we simply just block all DNS connections to anything but Knot Resolver:
 
-Start of by editing `/etc/pf.conf` and add the following snippet between `dummynet-anchor "com.apple/*"` and `dummynet-anchor "com.apple/*"` since pf is sensitive about the order of rules
+Easiest way would be to edit `/etc/pf.conf` and add the following snippet between `dummynet-anchor "com.apple/*"` and `anchor "com.apple/*"`. But since it will be overwritten on each macOS update it won't work very long.
 
 ```pf
 ### TO REROUTE DNS TO LOCALHOST
@@ -215,6 +213,22 @@ pass out on en0 route-to lo0 inet $Packets
 ### TO REROUTE DNS TO LOCALHOST
 ```
 _PS. if you're using something like Little Snitch, it will look like the connections are going to something other than 127.0.0.1 (e.g 8.8.8.8) because it is rerouted after the filter from Little Snitch_
+
+
+### To automate this process
+
+```bash
+# Copy the launchdaemon
+sudo cp com.better.pfctl.plist /Library/LaunchDaemons/better.dns-rules.com.conf
+sudo cp dns-rules.sh /usr/local/bin
+
+# Change owner
+sudo chown root:wheel /Library/LaunchDaemons/com.better.pfctl.plist
+
+# Install launchdaemon
+sudo launchctl load -w /Library/LaunchDaemons/com.better.pfctl.plist
+```
+
 
 Then reload the firewall with:
 
@@ -314,7 +328,7 @@ Open a Terminal window, and run the following command:
 brew install pam_yubico
 ```
 
-## Configure PAM on your Macbook
+## Configure PAM on your MacBook
 Open a Terminal window, and run the following command as your regular user, with firstly the YubiKey inserted.
 
 > Note: If you have secure keyboard input enabled for your terminal, this will give an error. Disable while you run the commands and reenable it.
@@ -328,18 +342,18 @@ ykpamcfg -2
 Your YubiKey are now setup with your MacBook and can be used. You should store the backup YubiKey somewhere safe for recovery - like in a vault in your bank ;)
 
 ## Enable YubiKey for Auth, Sudo and Screensaver
-Before you proceed, you should verify you have the `/usr/local/lib/security/pam_yubico.so` or `/opt/homebrew/lib/security/pam_yubico.so` file present on your Macbook from your earlier preparations. If you dont, you will lock your self out of your Macbook now.
+Before you proceed, you should verify you have the `/usr/local/lib/security/pam_yubico.so` or `/opt/homebrew/lib/security/pam_yubico.so` file present on your MacBook from your earlier preparations. If you dont, you will lock your self out of your MacBook now.
 
 Edit the following files:
 
-* /etc/pam.d/authorization
-* /etc/pam.d/sudo
-* /etc/pam.d/screensaver
+* `/etc/pam.d/authorization`
+* `/etc/pam.d/sudo`
+* `/etc/pam.d/screensaver`
 
 You need to use sudo to do so. From the terminal issue the following command:
 
-```
-sudo vi /etc/pam.d/screensaver
+```bash
+sudo nano /etc/pam.d/screensaver
 ```
 
 Add the following to the file:
@@ -368,7 +382,7 @@ account    required       pam_group.so no_warn deny group=admin,wheel ruser fail
 
 Also remember to set the screensaver to require password or it wont work anyway :)
 
-![Mac screensaver](https://i.stack.imgur.com/BwMhk.png "Macbook Screensaver Password")
+![Mac screensaver](https://i.stack.imgur.com/BwMhk.png "MacBook Screensaver Password")
 
 Before you alter the `sudo` and `authorization` files, you can verify everything works by enabling the screensaver first. If you cannot login from the screensaver while the YubiKey is present, something is terrible wrong now and you should NOT continue.
 
@@ -429,3 +443,4 @@ In case you lose your YubiKey, everything is not yet over and data is not yet lo
 * https://florin.myip.org/blog/easy-multifactor-authentication-ssh-using-yubikey-neo-tokens
 * https://getdnsapi.net/blog/dns-privacy-daemon-stubby/
 * https://dnsprivacy.org/wiki/pages/viewpage.action?pageId=3145812
+* https://iyanmv.medium.com/setting-up-correctly-packet-filter-pf-firewall-on-any-macos-from-sierra-to-big-sur-47e70e062a0e
