@@ -109,19 +109,7 @@ server_names = ....
 to
 
 ```toml
-server_names = ['cloudflare', 'cloudflare-ipv6', 'dnscrypt-ip4-nofilter-pri', 'dnscrypt-ip4-nofilter-alt', ' dnscrypt-ip6-nofilter-pri', 'dnscrypt-ip6-nofilter-alt']
-```
-
-if you wanna resolve mongodb.net
-
-and make sure the following code is uncommented:
-
-```toml
-  [sources.quad9-resolvers]
-  urls = ['https://www.quad9.net/quad9-resolvers.md']
-  minisign_key = 'RWQBphd2+f6eiAqBsvDZEBXBGHQBJfeG6G+wJPPKxCZMoEQYpmoysKUN'
-  cache_file = 'quad9-resolvers.md'
-  prefix = 'quad9-'
+server_names = ['cloudflare', 'cloudflare-ipv6']
 ```
 
 Restart dnscrypt-proxy to make the changes take affect:
@@ -129,6 +117,14 @@ Restart dnscrypt-proxy to make the changes take affect:
 ```sh
 sudo brew services restart dnscrypt-proxy
 ```
+
+_See complete example in [dnscrypt-proxy.toml](dnscrypt-proxy.toml)_
+
+
+## Blocking domains
+
+If you wish to block domains you can run the [generate-domains-blacklist.py](generate-domains-blacklist.py) in this repo
+Simply run `python generate-domains-blacklist.py -o /opt/homebrew/etc/blocked-names.txt` and it will generate a massive list of blocked domains that will not be resolved by dnscrypt-proxy.
 
 ## Install dnsmasq
 dnsmasq (short for DNS masquerade) is a lightweight, easy to configure DNS forwarder, designed to provide DNS (and optionally DHCP and TFTP) services to a small-scale network. It can serve the names of local machines which are not in the global DNS.
@@ -298,8 +294,7 @@ www.example.com.	77180	IN	A	93.184.216.34
 ;; WHEN: Sat Jan 22 21:55:19 CET 2022
 ;; MSG SIZE  rcvd: 60
 ```
-
-## Install YubiKey Personalization Tools
+# Install YubiKey Personalization Tools
 Install the latest version of the YubiKey Personalization Tool
 
 https://www.yubico.com/products/services-software/download/yubikey-personalization-tools/
@@ -380,7 +375,15 @@ account    required       pam_group.so no_warn group=admin,wheel fail_safe
 account    required       pam_group.so no_warn deny group=admin,wheel ruser fail_safe
 ```
 
-Also remember to set the screensaver to require password or it wont work anyway :)
+Also remember to set the screensaver to require password or it won't work anyway :)
+
+__Extra credit:__
+If you want to use Touch ID for sudo there's ways of doing that as well!
+Edit `/etc/pam.d/sudo` and add
+```
+auth       sufficient     pam_tid.so
+````
+as the first item, and you can use Touch ID even for sudo!
 
 ![Mac screensaver](https://i.stack.imgur.com/BwMhk.png "MacBook Screensaver Password")
 
