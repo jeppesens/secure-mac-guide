@@ -37,7 +37,6 @@ The required software for this guide is:
 * Homebrew
 * PAM Yubico
 * YubiKey Personalization Tools
-* dnsmasq
 * OpenSSL
 * LibreSSL
 
@@ -87,18 +86,13 @@ To install DNSCrypt proxy, run the following command:
 brew install dnscrypt-proxy
 ```
 
-Once installed, you need to change the listen port for the service. Edit the file `/opt/homebrew/etc/dnscrypt-proxy.toml` and change the following line:
+You can find the complete config [here](./dnscrypt-proxy.toml)
+
+Once installed, you need to change the listen port for the service. Edit the file `/opt/homebrew/etc/dnscrypt-proxy.toml` and change `listen_addresses` to the following:
 
 ```toml
 listen_addresses = ['127.0.0.1:53']
 ```
-
-to
-
-```toml
-listen_addresses = ['127.0.0.1:40']
-```
-This way, dnscrypt-proxy will listen on port 40 instead, since we use dnsmasq to listen on port 53 which is the default dns port.
 
 Then change the following line:
 
@@ -126,55 +120,8 @@ _See complete example in [dnscrypt-proxy.toml](dnscrypt-proxy.toml)_
 If you wish to block domains you can run the [generate-domains-blacklist.py](generate-domains-blacklist.py) in this repo
 Simply run `python generate-domains-blacklist.py -o /opt/homebrew/etc/blocked-names.txt` and it will generate a massive list of blocked domains that will not be resolved by dnscrypt-proxy.
 
-## Install dnsmasq
-dnsmasq (short for DNS masquerade) is a lightweight, easy to configure DNS forwarder, designed to provide DNS (and optionally DHCP and TFTP) services to a small-scale network. It can serve the names of local machines which are not in the global DNS.
 
-```sh
-brew install dnsmasq
-```
-
-Once installed, you'll need to change to configuration of dnsmasq. If you add dnscrypt also, the following config works. If you do not use dnscrypt, you will need to change the servers address from 127.0.0.1#40 to 1.1.1.1
-
-Alter the following file `/opt/homebrew/etc/dnsmasq.conf` and add the following content to the end of the file:
-
-```conf
-# For debugging purposes, log each DNS query as it passes through dnsmasq.
-# If you wanna see the entries, uncomment the two lines below, and make sure that
-# the folder /opt/homebrew/var/log/ exists
-#log-queries=extra
-#log-facility=/opt/homebrew/var/log/dnsmasq.log
-
-listen-address=127.0.0.1
-port=53
-# you can add this but it will require macOS to allow incoming connections to dnsmasq and I cannot explain why
-#interface=lo0
-domain-needed
-bogus-priv
-no-resolv
-no-hosts
-no-poll
-no-negcache
-rebind-localhost-ok
-strict-order
-proxy-dnssec
-
-local=/local/
-
-# Custom development domains
-address=/.dev/127.0.0.1
-address=/.dom/127.0.0.1
-
-# Upstream DNSCrypt
-server=127.0.0.1#40
-```
-
-Restart dnsmasq to make sure changes are affected
-
-```sh
-sudo brew services restart dnsmasq
-```
-
-[OPTIONAL] Then enable DNSMASQ for each interface on your Mac:
+[OPTIONAL] Then enable local DNS for each interface on your Mac:
 
 ```sh
 networksetup -listallnetworkservices 2>/dev/null | grep -v '*' | while read x ; do
